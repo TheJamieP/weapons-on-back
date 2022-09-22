@@ -2,7 +2,9 @@ ESX = nil
 
 Citizen.CreateThread(function()
     while ESX == nil do
-        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+        TriggerEvent('esx:getSharedObject', function(obj)
+            ESX = obj
+        end)
         Citizen.Wait(0)
     end
 end)
@@ -17,7 +19,8 @@ local SETTINGS = {
         y_rotation = 0,
         z_rotation = 0.0,
         occupied = false,
-        current_weapon = nil
+        current_weapon = nil,
+        current_handle = ""
     }, {
         x = 0.075,
         y = -0.15,
@@ -26,7 +29,8 @@ local SETTINGS = {
         y_rotation = 0,
         z_rotation = 0.0,
         occupied = false,
-        current_weapon = nil
+        current_weapon = nil,
+        current_handle = ""
     }, {
         x = 0.075,
         y = -0.15,
@@ -35,7 +39,8 @@ local SETTINGS = {
         y_rotation = 0,
         z_rotation = -0.04,
         occupied = false,
-        current_weapon = nil
+        current_weapon = nil,
+        current_handle = ""
     }, {
         x = 0.075,
         y = -0.15,
@@ -44,7 +49,8 @@ local SETTINGS = {
         y_rotation = 0,
         z_rotation = 0.0,
         occupied = false,
-        current_weapon = nil
+        current_weapon = nil,
+        current_handle = ""
     }},
 
     compatable_weapon_hashes = {
@@ -82,12 +88,16 @@ local SETTINGS = {
 local carried_guns = {}
 local attached_weapons = {}
 local ox_inventory = exports.ox_inventory
-
+local slingable_guns = {"weapon_bat", "weapon_carbinerifle", "weapon_carbineriflemk2", "weapon_assaultrifle",
+                        "weapon_specialcarbine", "weapon_bullpuprifle", "weapon_advancedrifle", "weapon_microsmg",
+                        "weapon_assaultsmg", "weapon_smg", "weapon_smgmk2", "weapon_gusenberg", "weapon_sniperrifle",
+                        "weapon_assaultshotgun", "weapon_bullpupshotgun", "weapon_pumpshotgun", "weapon_musket",
+                        "weapon_heavyshotgun"}
 Citizen.CreateThread(function()
     Wait(2500)
-    print("Initialised")
     while true do
         local me = GetPlayerPed(-1)
+        local gunBool, gun_table = hasGun()
 
         ---------------------------------------
         -- attach if player has large weapon --
@@ -98,18 +108,19 @@ Citizen.CreateThread(function()
             for i = 1, #(SETTINGS.slots) do
                 if not SETTINGS.slots[i].occupied then
                     Wait(1)
-                    local gunBool, gun_table = hasGun()
                     for i = 1, 4 do
                         if (gunBool and (gun_table[i] == wep_hash and gun_table[i] ~= SETTINGS.slots[i].current_weapon)) then
-                            
+
                             if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
-                                AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.slots[i].x,
-                                    SETTINGS.slots[i].y, SETTINGS.slots[i].z, SETTINGS.slots[i].x_rotation,
-                                    SETTINGS.slots[i].y_rotation, SETTINGS.slots[i].z_rotation, isMeleeWeapon(wep_name))
+                                SETTINGS.slots[i].current_handle =
+                                    AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.slots[i].x,
+                                        SETTINGS.slots[i].y, SETTINGS.slots[i].z, SETTINGS.slots[i].x_rotation,
+                                        SETTINGS.slots[i].y_rotation, SETTINGS.slots[i].z_rotation,
+                                        isMeleeWeapon(wep_name))
                                 SETTINGS.slots[i].occupied = true
                                 SETTINGS.slots[i].current_weapon = wep_hash
-                            end
 
+                            end
                         end
                     end
                 end
@@ -119,54 +130,28 @@ Citizen.CreateThread(function()
         --------------------------------------------
         -- remove from back if equipped / dropped --
         --------------------------------------------
-        
-        for name, attached_object in pairs(attached_weapons) do
-            -- equipped? delete it from back:
 
-            local gunBool, gun_table = hasGun()
-            print(json.encode(gun_table))
-            for i = 1,4 do
-                if GetSelectedPedWeapon(me) == attached_object.hash and gunBool and gun_table[i] ~= wep_hash  then
-                    print("dont have gun")
-                        -- equipped or not in weapon wheel
-                    for i = 1, #(SETTINGS.slots) do
-                        if GetHashKey(SETTINGS.slots[i].current_weapon) == GetHashKey(GetSelectedPedWeapon(me)) then
-                            SETTINGS.slots[i].occupied = false
-                            SETTINGS.slots[i].current_weapon = nil 
-                        end
-                    end
-                    DeleteObject(attached_object.handle)
-                    attached_weapons[name] = nil
-                end
-            end
-             
-        end
-        Wait(0)
     end
+
+    Wait(1000)
 end)
 -- carried_guns
 function hasGun()
-    local inventory = ox_inventory:Search('count',
-        {"weapon_bat", "weapon_carbinerifle", "weapon_carbineriflemk2", "weapon_assaultrifle", "weapon_specialcarbine",
-         "weapon_bullpuprifle", "weapon_advancedrifle", "weapon_microsmg", "weapon_assaultsmg", "weapon_smg",
-         "weapon_smgmk2", "weapon_gusenberg", "weapon_sniperrifle", "weapon_assaultshotgun", "weapon_bullpupshotgun",
-         "weapon_pumpshotgun", "weapon_musket", "weapon_heavyshotgun"})
+    local inventory = ox_inventory:Search('count', slingable_guns)
     if inventory then
         carried_guns = {}
-        for i = 1, 4 do
+        for i = 1, #SETTINGS.slots do
             for name, count in pairs(inventory) do
                 if count >= 1 then
                     table.insert(carried_guns, i, GetHashKey(name))
                 end
             end
             return true, carried_guns
-        
-        end        
-    end 
-             
+
+        end
+    end
+
 end
-
-
 
 function AttachWeapon(attachModel, modelHash, boneNumber, x, y, z, xR, yR, zR, isMelee)
     local bone = GetPedBoneIndex(GetPlayerPed(-1), boneNumber)
@@ -190,6 +175,7 @@ function AttachWeapon(attachModel, modelHash, boneNumber, x, y, z, xR, yR, zR, i
     end
     AttachEntityToEntity(attached_weapons[attachModel].handle, GetPlayerPed(-1), bone, x, y, z, xR, yR, zR, 1, 1, 0, 0,
         2, 1)
+    return attached_weapons[attachModel].handle
 end
 
 function isMeleeWeapon(wep_name)
