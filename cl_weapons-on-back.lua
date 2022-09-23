@@ -94,10 +94,10 @@ local slingable_guns = {"weapon_bat", "weapon_carbinerifle", "weapon_carbinerifl
                         "weapon_assaultshotgun", "weapon_bullpupshotgun", "weapon_pumpshotgun", "weapon_musket",
                         "weapon_heavyshotgun"}
 Citizen.CreateThread(function()
-    Wait(2500)
+    Wait(1500)
     while true do
         local me = GetPlayerPed(-1)
-        local gunBool, gun_table = hasGun()
+        local gunBool = hasGun()
 
         ---------------------------------------
         -- attach if player has large weapon --
@@ -109,7 +109,8 @@ Citizen.CreateThread(function()
                 if not SETTINGS.slots[i].occupied then
                     Wait(1)
                     for i = 1, 4 do
-                        if (gunBool and (gun_table[i] == wep_hash and gun_table[i] ~= SETTINGS.slots[i].current_weapon)) then
+                        if (gunBool and
+                            (carried_guns[i] == wep_hash and carried_guns[i] ~= SETTINGS.slots[i].current_weapon)) then
 
                             if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
                                 SETTINGS.slots[i].current_handle =
@@ -130,11 +131,35 @@ Citizen.CreateThread(function()
         --------------------------------------------
         -- remove from back if equipped / dropped --
         --------------------------------------------
+        for key, attached_object in pairs(attached_weapons) do
+            if (GetSelectedPedWeapon(me) == attached_object.hash) or (not checkTable(attached_object.hash)) then
+                DeleteObject(attached_object.handle)
+                attached_weapons[key] = nil
+                for i = 1, #(SETTINGS.slots) do
+                    if SETTINGS.slots[i].current_handle == attached_object.handle then
+                        SETTINGS.slots[i].occupied = false
+                        SETTINGS.slots[i].current_weapon = nil
+                        SETTINGS.slots[i].current_handle = ""
+
+                    end
+                end
+
+            end
+        end
 
     end
 
     Wait(1000)
 end)
+function checkTable(hash)
+    for int, carried_gunsHash in pairs(carried_guns) do
+        if carried_gunsHash == hash then
+            return true
+        end
+    end
+    return false
+end
+
 -- carried_guns
 function hasGun()
     local inventory = ox_inventory:Search('count', slingable_guns)
@@ -146,7 +171,7 @@ function hasGun()
                     table.insert(carried_guns, i, GetHashKey(name))
                 end
             end
-            return true, carried_guns
+            return true
 
         end
     end
