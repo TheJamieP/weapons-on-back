@@ -1,10 +1,18 @@
 ESX = nil
+-----------------------------------------------------------------
+--             888                                 888         -- 
+--             888                                 888         -- 
+--             888                                 888         -- 
+--    .d8888b  88888b.   .d88b.   .d88b.  .d8888b  88888b.     -- 
+--    88K      888 "88b d8P  Y8b d8P  Y8b 88K      888 "88b    -- 
+--    "Y8888b. 888  888 88888888 88888888 "Y8888b. 888  888    -- 
+--         X88 888  888 Y8b.     Y8b.          X88 888  888    -- 
+--     88888P' 888  888  "Y8888   "Y8888   88888P' 888  888    --
+----------------------------------------------------------------- 
 
 Citizen.CreateThread(function()
     while ESX == nil do
-        TriggerEvent('esx:getSharedObject', function(obj)
-            ESX = obj
-        end)
+        ESX = exports['es_extended']:getSharedObject()
         Citizen.Wait(0)
     end
 end)
@@ -24,7 +32,7 @@ local SETTINGS = {
     }, {
         x = 0.075,
         y = -0.15,
-        z = 0.04,
+        z = 0.044,
         x_rotation = 0.0,
         y_rotation = 0,
         z_rotation = 0.0,
@@ -87,14 +95,19 @@ local SETTINGS = {
 }
 local carried_guns = {}
 local attached_weapons = {}
-local ox_inventory = exports.ox_inventory
 local slingable_guns = {"weapon_bat", "weapon_carbinerifle", "weapon_carbineriflemk2", "weapon_assaultrifle",
                         "weapon_specialcarbine", "weapon_bullpuprifle", "weapon_advancedrifle", "weapon_microsmg",
                         "weapon_assaultsmg", "weapon_smg", "weapon_smgmk2", "weapon_gusenberg", "weapon_sniperrifle",
                         "weapon_assaultshotgun", "weapon_bullpupshotgun", "weapon_pumpshotgun", "weapon_musket",
                         "weapon_heavyshotgun"}
+
 Citizen.CreateThread(function()
-    Wait(1500)
+    Wait(500)
+    -- check if player is laoded
+    while not ESX.IsPlayerLoaded() do
+        Wait(100)
+    end
+    local oldme = 0
     while true do
         local me = GetPlayerPed(-1)
         local gunBool = hasGun()
@@ -107,8 +120,8 @@ Citizen.CreateThread(function()
 
             for i = 1, #(SETTINGS.slots) do
                 if not SETTINGS.slots[i].occupied then
-                    Wait(1)
-                    for i = 1, 4 do
+
+                    for i = 1, #SETTINGS.slots do
                         if (gunBool and
                             (carried_guns[i] == wep_hash and carried_guns[i] ~= SETTINGS.slots[i].current_weapon)) then
 
@@ -126,13 +139,15 @@ Citizen.CreateThread(function()
                     end
                 end
             end
+            Wait(10)
         end
 
         --------------------------------------------
         -- remove from back if equipped / dropped --
         --------------------------------------------
         for key, attached_object in pairs(attached_weapons) do
-            if (GetSelectedPedWeapon(me) == attached_object.hash) or (not checkTable(attached_object.hash)) then
+            if (GetSelectedPedWeapon(me) == attached_object.hash) or (not checkTable(attached_object.hash)) or me ~=
+                oldme then
                 DeleteObject(attached_object.handle)
                 attached_weapons[key] = nil
                 for i = 1, #(SETTINGS.slots) do
@@ -146,10 +161,10 @@ Citizen.CreateThread(function()
 
             end
         end
+        oldme = me
 
     end
-
-    Wait(1000)
+    Wait(100)
 end)
 function checkTable(hash)
     for int, carried_gunsHash in pairs(carried_guns) do
@@ -162,7 +177,9 @@ end
 
 -- carried_guns
 function hasGun()
-    local inventory = ox_inventory:Search('count', slingable_guns)
+    -- make sure the player is loaded in so we can get their inventory
+
+    local inventory = exports.ox_inventory:Search('count', slingable_guns)
     if inventory then
         carried_guns = {}
         for i = 1, #SETTINGS.slots do
