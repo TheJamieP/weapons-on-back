@@ -17,89 +17,50 @@ Citizen.CreateThread(function()
     end
 end)
 
-local SETTINGS = {
-    back_bone = 24816,
-    slots = {{
-        x = 0.075,
-        y = -0.149,
-        z = 0.14,
-        x_rotation = 0.0,
-        y_rotation = 0,
-        z_rotation = 0.0,
-        occupied = false,
-        current_weapon = nil,
-        current_handle = ""
-    }, {
-        x = 0.075,
-        y = -0.15,
-        z = 0.044,
-        x_rotation = 0.0,
-        y_rotation = 0,
-        z_rotation = 0.0,
-        occupied = false,
-        current_weapon = nil,
-        current_handle = ""
-    }, {
-        x = 0.075,
-        y = -0.15,
-        z = -0.04,
-        x_rotation = 0.0,
-        y_rotation = 0,
-        z_rotation = -0.04,
-        occupied = false,
-        current_weapon = nil,
-        current_handle = ""
-    }, {
-        x = 0.075,
-        y = -0.15,
-        z = -0.14,
-        x_rotation = 0.0,
-        y_rotation = 0,
-        z_rotation = 0.0,
-        occupied = false,
-        current_weapon = nil,
-        current_handle = ""
-    }},
+slots = {{
+    x = 0.075,
+    y = -0.149,
+    z = 0.14,
+    x_rotation = 0,
+    y_rotation = 0,
+    z_rotation = 0,
+    occupied = false,
+    current_weapon = nil,
+    current_handle = ""
+}, {
+    x = 0.075,
+    y = -0.15,
+    z = 0.044,
+    x_rotation = 0.0,
+    y_rotation = 0,
+    z_rotation = 0,
+    occupied = false,
+    current_weapon = nil,
+    current_handle = ""
+}, {
+    x = 0.075,
+    y = -0.15,
+    z = -0.04,
+    x_rotation = 0.0,
+    y_rotation = 0,
+    z_rotation = 0,
+    occupied = false,
+    current_weapon = nil,
+    current_handle = ""
+}, {
+    x = 0.075,
+    y = -0.15,
+    z = -0.14,
+    x_rotation = 0.0,
+    y_rotation = 0,
+    z_rotation = 45,
+    occupied = false,
+    current_weapon = nil,
+    current_handle = ""
+}}
 
-    compatable_weapon_hashes = {
-        -- melee:
-        -- ["prop_golf_iron_01"] = 1141786504, -- positioning still needs work
-        ["w_me_bat"] = -1786099057,
-        -- ["prop_ld_jerrycan_01"] = 883325847,
-        -- assault rifles:
-        ["w_ar_carbinerifle"] = -2084633992,
-        ["w_ar_carbineriflemk2"] = GetHashKey("WEAPON_CARBINERIFLE_MK2"),
-        ["w_ar_assaultrifle"] = -1074790547,
-        ["w_ar_specialcarbine"] = -1063057011,
-        ["w_ar_bullpuprifle"] = 2132975508,
-        ["w_ar_advancedrifle"] = -1357824103,
-        -- sub machine guns:
-        ["w_sb_microsmg"] = 324215364,
-        ["w_sb_assaultsmg"] = -270015777,
-        ["w_sb_smg"] = 736523883,
-        ["w_sb_smgmk2"] = GetHashKey("WEAPON_SMG_MK2"),
-        ["w_sb_gusenberg"] = 1627465347,
-        -- sniper rifles:
-        ["w_sr_sniperrifle"] = 100416529,
-        -- shotguns:
-        ["w_sg_assaultshotgun"] = -494615257,
-        ["w_sg_bullpupshotgun"] = -1654528753,
-        ["w_sg_pumpshotgun"] = 487013001,
-        ["w_ar_musket"] = -1466123874,
-        ["w_sg_heavyshotgun"] = GetHashKey("WEAPON_HEAVYSHOTGUN"),
-        -- ["w_sg_sawnoff"] = 2017895192 don't show, maybe too small?
-        -- launchers:
-        ["w_lr_firework"] = 2138347493,
-        ["w_ar_famas"] = GetHashKey("WEAPON_FAMAS")
-    }
-}
 local carried_guns = {}
 local attached_weapons = {}
-local slingable_guns = {"weapon_bat", "weapon_carbinerifle", "weapon_carbineriflemk2", "weapon_assaultrifle",
-                        "weapon_specialcarbine", "weapon_bullpuprifle", "weapon_advancedrifle", "weapon_microsmg",
-                        "weapon_assaultsmg", "weapon_smg", "weapon_smgmk2", "weapon_gusenberg", "weapon_sniperrifle",
-                        "weapon_assaultshotgun", "weapon_bullpupshotgun", "weapon_pumpshotgun", "weapon_musket",
-                        "weapon_heavyshotgun"}
 
 Citizen.CreateThread(function()
     Wait(500)
@@ -116,23 +77,20 @@ Citizen.CreateThread(function()
         -- attach if player has large weapon --
         ---------------------------------------
 
-        for wep_name, wep_hash in pairs(SETTINGS.compatable_weapon_hashes) do
+        for wep_name, wep_hash in pairs(Config.compatable_weapon_hashes) do
 
-            for i = 1, #(SETTINGS.slots) do
-                if not SETTINGS.slots[i].occupied then
+            for i = 1, #(slots) do
+                if not slots[i].occupied then
 
-                    for i = 1, #SETTINGS.slots do
-                        if (gunBool and
-                            (carried_guns[i] == wep_hash and carried_guns[i] ~= SETTINGS.slots[i].current_weapon)) then
+                    for i = 1, #slots do
+                        if (gunBool and (carried_guns[i] == wep_hash and carried_guns[i] ~= slots[i].current_weapon)) then
 
                             if not attached_weapons[wep_name] and GetSelectedPedWeapon(me) ~= wep_hash then
-                                SETTINGS.slots[i].current_handle =
-                                    AttachWeapon(wep_name, wep_hash, SETTINGS.back_bone, SETTINGS.slots[i].x,
-                                        SETTINGS.slots[i].y, SETTINGS.slots[i].z, SETTINGS.slots[i].x_rotation,
-                                        SETTINGS.slots[i].y_rotation, SETTINGS.slots[i].z_rotation,
-                                        isMeleeWeapon(wep_name))
-                                SETTINGS.slots[i].occupied = true
-                                SETTINGS.slots[i].current_weapon = wep_hash
+                                slots[i].current_handle = AttachWeapon(wep_name, wep_hash, Config.backbone, slots[i].x,
+                                    slots[i].y, slots[i].z, slots[i].x_rotation, slots[i].y_rotation,
+                                    slots[i].z_rotation, isMeleeWeapon(wep_name))
+                                slots[i].occupied = true
+                                slots[i].current_weapon = wep_hash
 
                             end
                         end
@@ -150,11 +108,11 @@ Citizen.CreateThread(function()
                 oldme then
                 DeleteObject(attached_object.handle)
                 attached_weapons[key] = nil
-                for i = 1, #(SETTINGS.slots) do
-                    if SETTINGS.slots[i].current_handle == attached_object.handle then
-                        SETTINGS.slots[i].occupied = false
-                        SETTINGS.slots[i].current_weapon = nil
-                        SETTINGS.slots[i].current_handle = ""
+                for i = 1, #(slots) do
+                    if slots[i].current_handle == attached_object.handle then
+                        slots[i].occupied = false
+                        slots[i].current_weapon = nil
+                        slots[i].current_handle = ""
 
                     end
                 end
@@ -177,12 +135,11 @@ end
 
 -- carried_guns
 function hasGun()
-    -- make sure the player is loaded in so we can get their inventory
 
-    local inventory = exports.ox_inventory:Search('count', slingable_guns)
+    local inventory = exports.ox_inventory:Search('count', Config.slingable_guns)
     if inventory then
         carried_guns = {}
-        for i = 1, #SETTINGS.slots do
+        for i = 1, #slots do
             for name, count in pairs(inventory) do
                 if count >= 1 then
                     table.insert(carried_guns, i, GetHashKey(name))
